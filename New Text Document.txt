@@ -1,0 +1,767 @@
+# Q1. Docker Compose – Online Boutique Store (25 Marks)
+
+## 1. Docker Compose YAML file
+
+Create a file named `docker-compose.yml`.
+
+yaml
+
+```yaml
+
+version: '3.8'
+
+services:
+  mysql:
+    image: mysql:8.0
+    container_name: boutique-mysql
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: root123
+      MYSQL_DATABASE: boutique_db
+      MYSQL_USER: boutique_user
+      MYSQL_PASSWORD: boutique123
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+    networks:
+      - boutique-network
+
+  tomcat:
+    image: tomcat:9.0
+    container_name: boutique-tomcat
+    restart: always
+    ports:
+      - "8080:8080"
+    depends_on:
+      - mysql
+    networks:
+      - boutique-network
+
+volumes:
+  mysql_data:
+
+networks:
+  boutique-network:
+    driver: bridge
+```
+
+## 2. Explanation of YAML file
+
+| Configuration | Description |
+| --- | --- |
+| `mysql:8.0` | MySQL database image |
+| `tomcat:9.0` | Tomcat web server image |
+| `3306:3306` | Exposes MySQL port |
+| `8080:8080` | Exposes Tomcat port |
+| `mysql_data` | Stores database data permanently |
+| `boutique-network` | Allows containers to communicate |
+| `depends_on` | Starts MySQL before Tomcat |
+
+Important: Inside the Docker network, the Tomcat application should connect to MySQL using hostname `mysql` and port `3306`, not `localhost`.
+
+## 3. Steps to execute Docker Compose
+
+### Step 1: Create a project directory
+
+bash
+
+```bash
+mkdir online-boutique
+cd online-boutique
+```
+
+### Step 2: Create Docker Compose file
+
+bash
+
+```bash
+nano docker-compose.yml
+```
+
+Paste the above YAML configuration and save the file.
+
+### Step 3: Start both containers
+
+bash
+
+```bash
+docker compose up -d
+```
+
+This command downloads the images if necessary and starts both containers in the background.
+
+### Step 4: Verify running containers
+
+bash
+
+```bash
+docker compose ps
+```
+
+Expected output:
+
+text
+
+```text
+NAME              IMAGE        STATUS
+boutique-mysql    mysql:8.0    Up
+boutique-tomcat   tomcat:9.0   Up
+```
+
+### Step 5: Check container logs
+
+bash
+
+```bash
+docker compose logs
+```
+
+To check individual logs:
+
+bash
+
+```bash
+docker compose logs mysql
+docker compose logs tomcat
+```
+
+### Step 6: Access Tomcat through browser
+
+Open your web browser and enter:
+
+URL\*\*http://localhost:8080\*\*
+
+You should see the Apache Tomcat welcome page if Tomcat is running successfully.
+
+Tech Junkie Blog - Real World Tutorials, Happy Coding\!: JavaEE: Install Tomcat 9 On Windows
+
+[techjunkieblog.com](<https://www.techjunkieblog.com/2019/09/javaee-install-tomcat-9-on-windows.html?utm_source=chatgpt.com>)
+
+Note: The Tomcat welcome page confirms the server is running. To display the actual boutique store application, you must deploy its WAR file into Tomcat.
+
+## 4. Scenario-based questions and answers
+
+### Scenario 1: Configure port mappings and custom Docker network
+
+Question: How do you configure port mappings and a custom Docker network?
+
+Answer:
+
+We configure port mappings and a custom bridge network in the Docker Compose YAML file.
+
+yaml
+
+```yaml
+ports:
+  - "8080:8080"
+```
+
+This allows users to access Tomcat through port 8080.
+
+yaml
+
+```yaml
+ports:
+  - "3306:3306"
+```
+
+This exposes MySQL through port 3306.
+
+Create a custom network:
+
+yaml
+
+```yaml
+networks:
+  boutique-network:
+    driver: bridge
+```
+
+Attach both containers to the network:
+
+yaml
+
+```yaml
+networks:
+  - boutique-network
+```
+
+Result:
+
+- Tomcat is accessible at `http://localhost:8080`.
+- MySQL is accessible on port `3306`.
+- Tomcat communicates with MySQL using hostname `mysql`.
+- Both containers communicate securely through the custom Docker network.
+
+### Scenario 2: MySQL data is lost after removing the container
+
+Question: Why does this happen, and how can you preserve database data?
+
+Answer:
+
+Data is lost because the database is stored inside the container's writable filesystem. When the container is removed, its internal data may also be deleted.
+
+Solution: Use Docker volumes.
+
+Add the following configuration:
+
+yaml
+
+```yaml
+services:
+  mysql:
+    image: mysql:8.0
+    volumes:
+      - mysql_data:/var/lib/mysql
+
+volumes:
+  mysql_data:
+```
+
+Explanation:
+
+- `mysql_data` creates a persistent Docker volume.
+- `/var/lib/mysql` is the MySQL database storage directory.
+- Database data remains محفوظ even if the MySQL container is removed and recreated.
+
+To verify the volume:
+
+bash
+
+```bash
+docker volume ls
+```
+
+To inspect the volume:
+
+bash
+
+```bash
+docker volume inspect online-boutique_mysql_data
+```
+
+Result: Customer registration details and product information remain stored even after recreating the MySQL container, provided the volume is not deleted.
+
+### Scenario 3: Tomcat shows Connection Refused error
+
+Question: How do you troubleshoot the Tomcat container and database connection?
+
+Answer:
+
+Follow these steps.
+
+Step 1: Check whether containers are running
+
+bash
+
+```bash
+docker compose ps
+```
+
+If the Tomcat container is stopped, start it:
+
+bash
+
+```bash
+docker compose up -d
+```
+
+Step 2: Check Tomcat logs
+
+bash
+
+```bash
+docker compose logs tomcat
+```
+
+To display the latest logs continuously:
+
+bash
+
+```bash
+docker compose logs -f tomcat
+```
+
+Step 3: Verify port mapping
+
+bash
+
+```bash
+docker compose port tomcat 8080
+```
+
+Expected output:
+
+text
+
+```text
+0.0.0.0:8080
+```
+
+Step 4: Check MySQL container
+
+bash
+
+```bash
+docker compose ps mysql
+```
+
+Check MySQL logs:
+
+bash
+
+```bash
+docker compose logs mysql
+```
+
+Step 5: Verify database connection settings
+
+The Tomcat application should use:
+
+text
+
+```text
+Database Host: mysql
+Database Port: 3306
+Database Name: boutique_db
+Username: boutique_user
+Password: boutique123
+```
+
+Do not use `localhost` as the MySQL hostname from inside the Tomcat container.
+
+Step 6: Restart the containers
+
+bash
+
+```bash
+docker compose restart
+```
+
+Step 7: Stop containers safely
+
+bash
+
+```bash
+docker compose stop
+```
+
+Step 8: Remove containers
+
+bash
+
+```bash
+docker compose down
+```
+
+This removes the containers and network but preserves the named MySQL volume.
+
+To remove everything, including database data:
+
+bash
+
+```bash
+docker compose down -v
+```
+
+Warning Do not use `docker compose down -v` if you want to preserve your database.
+
+## 5. Important Docker Compose commands for practical exam
+
+| Command | Purpose |
+| --- | --- |
+| `docker compose up -d` | Start containers |
+| `docker compose ps` | List running containers |
+| `docker compose logs` | View logs |
+| `docker compose logs -f` | Follow logs |
+| `docker compose restart` | Restart containers |
+| `docker compose stop` | Stop containers |
+| `docker compose down` | Stop and remove containers |
+| `docker volume ls` | List volumes |
+| `docker network ls` | List networks |
+
+## 6. Final architecture
+
+Web Browser
+
+[http://localhost:8080](<http://localhost:8080?utm_source=chatgpt.com>)
+
+Port 8080
+
+Tomcat Container
+
+Port 8080
+
+boutique-network · MySQL:3306
+
+MySQL Container
+
+Port 3306
+
+Persistent Docker Volume
+
+mysql\_data
+
+Conclusion: Docker Compose allows us to run Tomcat and MySQL in separate containers, configure port mappings, create a custom network, and use persistent volumes to protect database information. We can manage the complete application using simple Docker Compose commands.
+
+# Q2. Jenkins Pipeline for a Maven Web Project with GitHub Webhooks (25 Marks)
+
+## Aim
+
+To configure a Jenkins Scripted Pipeline that automatically builds and deploys the Online Boutique Store Maven Web Application whenever developers commit and push code changes to GitHub.
+
+GitHub Repository: [https://github.com/haleema91/LAB-INTERNAL-II-OBS.git](<https://github.com/haleema91/LAB-INTERNAL-II-OBS.git?utm_source=chatgpt.com>)
+
+## 1. Clone the GitHub Repository
+
+1. Open the terminal on the Jenkins server.
+2. Install Git if it is not already installed.
+
+bash
+
+```bash
+sudo apt update
+sudo apt install git -y
+```
+
+3. Clone the GitHub repository.
+
+bash
+
+```bash
+git clone https://github.com/haleema91/LAB-INTERNAL-II-OBS.git
+```
+
+4. Navigate into the project directory.
+
+bash
+
+```bash
+cd LAB-INTERNAL-II-OBS
+```
+
+5. Verify the project files.
+
+bash
+
+```bash
+ls
+```
+
+## 2. Configure Tomcat Web Server
+
+Tomcat is used to host and run the Java web application.
+
+1. Install Java:
+
+bash
+
+```bash
+sudo apt update
+sudo apt install openjdk-17-jdk -y
+```
+
+2. Download and install Apache Tomcat from the official website:
+   [Apache Tomcat Downloads](<https://tomcat.apache.org/?utm_source=chatgpt.com>)
+3. Extract Tomcat into `/opt/tomcat`.
+4. Start the Tomcat server.
+
+bash
+
+```bash
+sudo /opt/tomcat/bin/startup.sh
+```
+
+5. Open the browser and access:
+
+text
+
+```text
+http://localhost:8080
+```
+
+6. The Tomcat welcome page should appear.
+
+Install Apache Tomcat 11 on RHEL9 - たれながし.info
+
+[tarenagashi.hatenablog.jp](<https://tarenagashi.hatenablog.jp/entry/2025/03/23/004446?utm_source=chatgpt.com>)
+
+## 3. Configure Jenkins
+
+### Step 1: Install Required Plugins
+
+Open Jenkins Dashboard:
+
+1. Click Manage Jenkins.
+2. Select Plugins.
+3. Install the following plugins:
+   - Git Plugin
+   - GitHub Integration Plugin
+   - Pipeline Plugin
+   - Maven Integration Plugin
+   - Deploy to Container Plugin
+
+### Step 2: Configure Maven
+
+1. Open Manage Jenkins.
+2. Select Tools.
+3. Find Maven installations.
+4. Click Add Maven.
+5. Enter the name as `Maven`.
+6. Save the configuration.
+
+### Step 3: Create a Pipeline Job
+
+1. Open Jenkins Dashboard.
+2. Click New Item.
+3. Enter the name `Online-Boutique-Store`.
+4. Select Pipeline.
+5. Click OK.
+
+### Step 4: Configure GitHub Webhook Trigger
+
+Under the Pipeline job configuration:
+
+1. Navigate to Build Triggers.
+2. Select GitHub hook trigger for GITScm polling.
+3. Save the configuration.
+
+Integrate Jenkins with GitHub (using Webhooks)
+
+[free-it-tutorials.com](<https://www.free-it-tutorials.com/jenkins-integration/github-integration-webhooks/?utm_source=chatgpt.com>)
+
+## 4. Configure GitHub Webhook
+
+1. Open the GitHub repository:
+
+[https://github.com/haleema91/LAB-INTERNAL-II-OBS](<https://github.com/haleema91/LAB-INTERNAL-II-OBS?utm_source=chatgpt.com>)
+
+2. Click Settings.
+3. Select Webhooks.
+4. Click Add webhook.
+5. Enter the following details:
+
+| Field | Value |
+| --- | --- |
+| Payload URL | `http://YOUR_JENKINS_IP:8080/github-webhook/` |
+| Content type | `application/json` |
+| Secret | Optional configured webhook secret |
+| Events | Just the push event |
+| Active | Enabled |
+
+6. Click Add webhook.
+
+Webhooks Testing: Types, Steps, Tools & Challenges (2025)
+
+[hevodata.com](<https://hevodata.com/learn/webhooks-testing/?utm_source=chatgpt.com>)
+
+Note: Replace `YOUR_JENKINS_IP` with the reachable IP address or hostname of your Jenkins server. Jenkins must be accessible from GitHub, and the webhook endpoint must not be blocked by a firewall.
+
+## 5. Create Jenkins Scripted Pipeline
+
+Open the Jenkins Pipeline job configuration.
+
+Select Pipeline and choose Pipeline script.
+
+Enter the following Scripted Pipeline code:
+
+groovy
+
+```groovy
+
+node {
+    stage('GitHub Clone') {
+        git branch: 'main',
+            url: 'https://github.com/haleema91/LAB-INTERNAL-II-OBS.git'
+    }
+
+    stage('Maven Clean') {
+        sh 'mvn clean'
+    }
+
+    stage('Maven Build') {
+        sh 'mvn compile'
+    }
+
+    stage('Maven Test') {
+        sh 'mvn test'
+    }
+
+    stage('Maven Package') {
+        sh 'mvn package'
+    }
+
+    stage('Deploy to Tomcat') {
+        sh '''
+        cp target/*.war /opt/tomcat/webapps/
+        '''
+    }
+}
+```
+
+Note:
+
+- Change the branch name if your repository uses a different default branch.
+- Configure Jenkins permissions so the Jenkins user can access the Tomcat webapps directory.
+- For a private repository, configure GitHub credentials in Jenkins and use `credentialsId` in the Git checkout.
+- Ensure Maven and Java are installed on the Jenkins agent.
+
+Click Save, then click Build Now to execute the pipeline manually for the first time.
+
+## 6. Deploy the Application on Tomcat
+
+After successful Maven packaging:
+
+1. Navigate to the project directory.
+2. Locate the generated WAR file.
+
+bash
+
+```bash
+ls target/*.war
+```
+
+3. Copy the WAR file to the Tomcat webapps directory.
+
+bash
+
+```bash
+sudo cp target/*.war /opt/tomcat/webapps/
+```
+
+4. Restart Tomcat if required.
+
+bash
+
+```bash
+sudo /opt/tomcat/bin/shutdown.sh
+sudo /opt/tomcat/bin/startup.sh
+```
+
+5. Open the browser:
+
+text
+
+```text
+http://localhost:8080/
+```
+
+Access the application using its WAR filename (without `.war`):
+
+text
+
+```text
+http://localhost:8080/your-war-file-name/
+```
+
+Deploy a Spring Boot Application into Tomcat | Okta Developer
+
+[developer.okta.com](<https://developer.okta.com/blog/2019/04/16/spring-boot-tomcat?utm_source=chatgpt.com>)
+
+## 7. Create Pipeline View in Jenkins
+
+1. Open Jenkins Dashboard.
+2. Click the + icon or New View.
+3. Enter the view name: `Online Boutique Pipeline`.
+4. Select Pipeline View.
+5. Click Create.
+6. Select the `Online-Boutique-Store` job.
+7. Configure the pipeline view and click Save.
+
+使用Maven构建Java应用程序
+
+[jenkins.io](<https://jenkins.io/zh/doc/tutorials/build-a-java-app-with-maven?utm_source=chatgpt.com>)
+
+## 8. Demonstrate Automatic Build Using GitHub Webhook
+
+Follow these steps to demonstrate automatic triggering:
+
+1. Open the cloned project folder.
+2. Make a small change to a source code file.
+3. Commit and push the changes.
+
+Execute:
+
+bash
+
+```bash
+git add .
+git commit -m "Updated Online Boutique Store"
+git push origin main
+```
+
+4. GitHub sends a webhook notification to Jenkins.
+5. Jenkins receives the notification.
+6. Jenkins automatically starts the pipeline.
+7. The pipeline executes the following stages:
+
+## Jenkins Pipeline Execution
+
+1. GitHub Clone
+   SuccessFetches the latest source code.
+2. Maven Clean
+   SuccessRemoves previously generated build files.
+3. Maven Build
+   SuccessCompiles the application.
+4. Maven Test
+   SuccessExecutes test cases.
+5. Maven Package
+   SuccessGenerates the WAR file.
+6. Deploy to Tomcat
+   SuccessDeploys the application to the Tomcat server.
+
+8. Open Jenkins Dashboard and verify that a new build has started automatically.
+9. Check the console output and confirm that all pipeline stages are successful.
+
+[notes.kodekloud.com](<https://notes.kodekloud.com/docs/Jenkins-For-Beginners/Jenkins-Pipelines/Create-Pipeline-with-Parameters/page?utm_source=chatgpt.com>)
+
+## Scenario-Based Questions and Answers
+
+1. Your project manager asks you to remove previously generated build files before building the Online Boutique Store Maven Java Web Application. Which Maven command should you use in the pipeline?
+
+Answer:
+
+bash
+
+```bash
+mvn clean
+```
+
+Explanation: The `mvn clean` command removes previously generated build files, usually from the `target` directory.
+
+2. Your Online Boutique Store source code is available in a private GitHub repository. Where should you provide the repository URL in the Jenkins pipeline?
+
+Answer:
+
+Provide the GitHub repository URL inside the `git` step of the Jenkins pipeline.
+
+Example:
+
+groovy
+
+```groovy
+git branch: 'main',
+    credentialsId: 'github-credentials',
+    url: 'https://github.com/haleema91/LAB-INTERNAL-II-OBS.git'
+```
+
+Explanation: The `url` parameter specifies the GitHub repository location, while `credentialsId` provides authentication for accessing the private repository.
+
+3. Your Online Boutique Store application is building successfully, but the WAR file is not generated. Which Maven command should you execute in pipeline code?
+
+Answer:
+
+bash
+
+```bash
+mvn package
+```
+
+Explanation: The `mvn package` command compiles, tests, and packages the application into a WAR file when the Maven project is configured with WAR packaging.
+
+## Result
+
+Successfully configured a Jenkins Scripted Pipeline integrated with GitHub Webhooks to automatically clone, clean, build, test, package, and deploy the Online Boutique Store Maven Web Application to the Apache Tomcat server.
+
+Expected outcome: Whenever a developer pushes code changes to GitHub, Jenkins automatically triggers the pipeline and deploys the updated application to Tomcat.

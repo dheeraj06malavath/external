@@ -1,0 +1,36 @@
+
+services:
+  mysql:
+    image: mysql:latest
+    container_name: boutique-mysql
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: root123
+      MYSQL_DATABASE: boutique_db
+      MYSQL_USER: boutique_user
+      MYSQL_PASSWORD: boutique123
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+    networks:
+      - boutique-network
+
+  tomcat:
+    image: tomcat:latest
+    container_name: boutique-tomcat
+    restart: always
+    ports:
+      - "8080:8080"
+    depends_on:
+      - mysql
+    networks:
+      - boutique-network
+
+# volumes:
+#   mysql_data:
+
+
+networks:
+  boutique-network:
+    driver: bridge  
